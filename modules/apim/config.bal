@@ -8,13 +8,11 @@
 import ballerina/http;
 
 final string apimHost = "https://gateway.api.cloud.wso2.com";
-final string publisherRESTEP = apimHost + "/api/am/publisher";
-public final string apiDetailEP = apimHost + "/api/am/publisher/apis/";
 final string apiSubscriptionEP = apimHost + "/api/am/store/subscriptions?apiId=";
 final string applicationDetailEP = apimHost + "/api/am/store/applications/";
+final string publisherRESTEP = apimHost + "/api/am/publisher";
+public string apiDetailEP = apimHost + "/api/am/publisher/apis/";
 public string[] choreoThrottlingTiers = ["10KPerMin", "20KPerMin", "50KPerMin", "Unlimited", "null"];
-configurable string clientId = ?;
-configurable string clientSecret = ?;
 public http:ClientConfiguration clientEPConfig = {
     auth: {
         tokenUrl: "https://gateway.api.cloud.wso2.com/token",
@@ -26,3 +24,8 @@ public http:ClientConfiguration clientEPConfig = {
         enable: false
     }
 };
+
+configurable string clientId = ?;
+configurable string clientSecret = ?;
+public configurable string cloudOrgName = ?;
+public configurable MigrationCondition migrationCondition = ?;

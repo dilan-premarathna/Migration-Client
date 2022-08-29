@@ -37,16 +37,21 @@ public function getAPISummary() returns map<APIDetail>|error {
             if apiDetail is APIDetail {
                 log:printInfo("API Details", APIID = apiId, APIName = apiDetail.name, apiDetail = apiDetail);
                 apiSummary.name = apiDetail.name;
-                if apiDetail.sequences != [] {
+                if (apiDetail.sequences != []) {
                     apiSummary.customMediation = true;
-                    isMigratable = false;
+                    if (migrationCondition.customMediation) {
+                        isMigratable = false;
+                    }
                 }
-                if apiDetail.wsdlUri != "" && apiDetail.wsdlUri != null {
-                    apiSummary.soapToREST = true;
-                    isMigratable = false;
+                if (apiDetail.wsdlUri != "" && apiDetail.wsdlUri != null) {
+                    apiSummary.soapAPI = true;
+                    if (migrationCondition.soapAPI) {
+                        isMigratable = false;
+                    }
+
                 }
                 json endpointSecurity = (apiDetail.endpointSecurity ?: "").toJson();
-                if endpointSecurity is json && endpointSecurity != "" {
+                if (endpointSecurity is json && endpointSecurity != "") {
                     json|error epSecurityType = endpointSecurity.'type;
 
                     if epSecurityType is json {
@@ -54,51 +59,72 @@ public function getAPISummary() returns map<APIDetail>|error {
                     } else {
                         log:printError("Error occured in getting Endpoint security", 'error = epSecurityType, endpointSecurity = endpointSecurity);
                     }
-                    isMigratable = false;
+                    if (migrationCondition.endpointSecurity) {
+                        isMigratable = false;
+                    }
                 }
-                if apiDetail.authorizationHeader != "" && apiDetail.authorizationHeader != null {
+                if (apiDetail.authorizationHeader != "" && apiDetail.authorizationHeader != null) {
                     apiSummary.authorizationHeader = true;
-                    isMigratable = false;
+                    if (migrationCondition.authorizationHeader) {
+                        isMigratable = false;
+                    }
                 }
                 if apiDetail.accessControl != "" && apiDetail.accessControl != "NONE" {
                     apiSummary.accessControl = true;
-                    isMigratable = false;
+                    if (migrationCondition.accessControl) {
+                        isMigratable = false;
+                    }
                 }
                 if apiDetail.additionalProperties != null && apiDetail.additionalProperties != {} {
                     apiSummary.additionalProperties = true;
-                    isMigratable = false;
+                    if (migrationCondition.additionalProperties) {
+                        isMigratable = false;
+                    }
                 }
                 if apiDetail.responseCaching != "" && apiDetail.responseCaching != "Disabled" {
                     apiSummary.responseCaching = true;
-                    isMigratable = false;
+                    if (migrationCondition.responseCaching) {
+                        isMigratable = false;
+                    }
                 }
                 if apiDetail.visibility != "" && apiDetail.visibility != "PUBLIC" {
                     apiSummary.visibility = true;
-                    isMigratable = false;
+                    if (migrationCondition.visibility) {
+                        isMigratable = false;
+                    }
                 }
                 if apiDetail.maxTps != "" && apiDetail.maxTps != null {
                     apiSummary.maxTps = true;
-                    isMigratable = false;
+                    if (migrationCondition.maxTps) {
+                        isMigratable = false;
+                    }
                 }
                 SwaggerDef|error swaggerDefinition = (check apiDetail.apiDefinition.fromJsonString()).cloneWithType(SwaggerDef);
 
                 if swaggerDefinition is SwaggerDef {
                     if (swaggerDefinition.x\-wso2\-security != null && swaggerDefinition.x\-wso2\-security != "") {
-                        isMigratable = false;
                         apiSummary.scopes = true;
+                        if (migrationCondition.scopes) {
+                            isMigratable = false;
+                        }
+
                     }
                 }
                 json swaggerDef = check apiDetail.apiDefinition.fromJsonString();
                 string apiPolicy = apiDetail.apiLevelPolicy ?: "null";
                 if checkThrottligTiers(swaggerDef, apiPolicy) {
                     apiSummary.customThrottlingPolicy = true;
-                    isMigratable = false;
+                    if (migrationCondition.customThrottlingPolicy) {
+                        isMigratable = false;
+                    }
                 }
                 EndpointConfig|error endpointConfig = (check apiDetail.endpointConfig.fromJsonString()).cloneWithType(EndpointConfig);
                 if endpointConfig is EndpointConfig {
                     apiSummary.endpoint_type = endpointConfig.endpoint_type;
                     if endpointConfig.endpoint_type != "http" {
-                        isMigratable = false;
+                        if (migrationCondition.endpointConfig) {
+                            isMigratable = false;
+                        }
                     }
                 }
 
@@ -109,21 +135,23 @@ public function getAPISummary() returns map<APIDetail>|error {
 
             string[]|error applicationList = getSubscriptionDetails(apiId);
 
-            if (applicationList is string[]) {
-                foreach var item in applicationList {
-                    [grants, scopes] = getApplicationDetail(apiId, item, grants, scopes);
-                }
-
-            } else {
-                log:printError("Failure in getting application list of API ", APIID = apiId, 'error = applicationList);
-            }
-
-            foreach var item in grants {
-                if item != "" {
-                    if (item != "client_credentials" && item != "refresh_token") {
-                        apiSummary.grants = true;
-                        isMigratable = false;
+            if (migrationCondition.grants) {
+                if (applicationList is string[]) {
+                    foreach var item in applicationList {
+                        [grants, scopes] = getApplicationDetail(apiId, item, grants, scopes);
                     }
+
+                } else {
+                    log:printError("Failure in getting application list of API ", APIID = apiId, 'error = applicationList);
+                }
+                foreach var item in grants {
+                    if item != "" {
+                        if (item != "client_credentials" && item != "refresh_token") {
+                            apiSummary.grants = true;
+                            isMigratable = false;
+                        }
+                    }
+
                 }
 
             }
@@ -136,7 +164,7 @@ public function getAPISummary() returns map<APIDetail>|error {
                 [
                     apiSummary.name,
                     apiSummary.scopes.toString(),
-                    apiSummary.soapToREST.toString(),
+                    apiSummary.soapAPI.toString(),
                     apiSummary.endpointSecurity,
                     regex:replaceAll(grants.toString(), ",", "'"),
                     apiSummary.customMediation.toString(),
@@ -229,7 +257,7 @@ function getApplicationDetail(string APIID, string applicationId, string[] grant
 
 }
 
-public function getUniqueArray(string[] initialArr, string[] inpurArr) returns string[] {
+function getUniqueArray(string[] initialArr, string[] inpurArr) returns string[] {
 
     map<()> m = {};
     foreach var i in initialArr {

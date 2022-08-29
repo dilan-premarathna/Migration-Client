@@ -6,13 +6,23 @@
 // You may not alter or remove any copyright or other notice from copies of this content.
 
 import ballerina/io;
+import ballerina/file;
+
+string apiSummeryPath = "";
+string logPath = "";
+string migrationSummeryPath = "";
 
 public function saveApiSummary(string[][] apiSummary) returns error? {
     string filePath = "./summary/API-Summary.csv";
-    check io:fileWriteCsv(filePath, apiSummary,option="APPEND");
+    check io:fileWriteCsv(filePath, apiSummary, option = "APPEND");
 }
 
-public function saveMigrationSummary(json migrationSummary)returns error? {
+public function saveMigrationSummary(json migrationSummary) returns error? {
     string filePath = "./summary/Migration-Summary.json";
     check io:fileWriteJson(filePath, migrationSummary);
+}
+
+public function cleanDirectory() {
+    error? summeryRemove = file:remove("./summary", "RECURSIVE");
+    error? resourceRemove = file:remove("./resources", "RECURSIVE");
 }

@@ -97,7 +97,7 @@ public type ApplicationDetails record {
 public type APISummary record {
     string name = "";
     boolean scopes = false;
-    boolean soapToREST = false;
+    boolean soapAPI = false;
     string endpointSecurity = "";
     boolean grants = false;
     boolean customMediation = false;
@@ -120,4 +120,20 @@ public type SwaggerDef record {
 
 public type EndpointConfig record {
     string endpoint_type;
+};
+
+public type MigrationCondition record {
+    boolean accessControl;
+    boolean additionalProperties;
+    boolean authorizationHeader;
+    boolean customMediation;
+    boolean customThrottlingPolicy;
+    boolean endpointConfig;
+    boolean endpointSecurity;
+    boolean grants;
+    boolean maxTps;
+    boolean responseCaching;
+    boolean scopes;
+    boolean soapAPI;
+    boolean visibility;
 };

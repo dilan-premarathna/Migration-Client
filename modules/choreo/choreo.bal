@@ -13,7 +13,6 @@ import ballerina/regex;
 import migration_client.apim;
 
 string documentName = "";
-configurable string cloudOrgName = ?;
 http:Client graphQL = check new (graphQLEP);
 http:Client choreoPublisherClient = check new (publisherOpenAPIEP);
 http:Client publisherAPIClient = check new (publisherAPIEP, {http1Settings: {chunking: http:CHUNKING_NEVER}});
@@ -28,7 +27,7 @@ public function createAPI(apim:APIDetail apiDetail) returns error? {
     if swaggerDef is error {
         log:printError("Error occured while getting api def", 'error = swaggerDef);
     }
-    string[] context = regex:split(apiDetail.context, cloudOrgName);
+    string[] context = regex:split(apiDetail.context, apim:cloudOrgName);
     string apiContext = context[context.length() - 1];
 
     http:Request req = new ();
@@ -134,10 +133,10 @@ function updateDocument(string cloudApiID, string choreoApiID) returns error? {
         foreach DocumentList item in documentList.list {
             DocumentDeail dock = check publisherAPIClient->post(choreoApiID + "/documents" + "?organizationId=" + orgUUId, item, {"Authorization": "Bearer " + token});
             log:printInfo("Document Content is ", docContent = item.sourceType.toString());
-            if item.sourceType == "FILE" && dock.documentId is string {
+            if ((item.sourceType == "FILE") && (dock.documentId is string)) {
                 string|error docPath = getDocument(cloudApiID, <string>item.documentId);
                 log:printInfo("Document has File Content");
-                if docPath is string {
+                if (docPath is string) {
                     error? uploadDocumentResult = uploadDocument(docPath, choreoApiID, dock.documentId);
                     if uploadDocumentResult is error {
                         log:printError("Error in uploadDocument Result", 'error = uploadDocumentResult);
@@ -201,7 +200,7 @@ function uploadDocument(string filePath, string apiID, string docID) returns err
     documentFilePart.setFileAsEntityBody(filePath);
     mime:Entity[] bodyParts = [documentFilePart];
     req.setBodyParts(bodyParts, contentType = mime:MULTIPART_FORM_DATA);
-    json response = check publisherAPIClient->post(apiID + "/documents/" + docID + "/content?organizationId=" + orgUUId, req, {"Authorization": "Bearer " + token});
+    json _ = check publisherAPIClient->post(apiID + "/documents/" + docID + "/content?organizationId=" + orgUUId, req, {"Authorization": "Bearer " + token});
 
 }
 
@@ -218,6 +217,6 @@ function uploadInlineContent(string content, string choreoApiId, string choreoDo
     documentInlinePart.setText(content);
     mime:Entity[] bodyParts = [documentInlinePart];
     req.setBodyParts(bodyParts, contentType = mime:MULTIPART_FORM_DATA);
-    json response = check publisherAPIClient->post(choreoApiId + "/documents/" + choreoDocId + "/content?organizationId=" + orgUUId, req, {"Authorization": "Bearer " + token});
+    json _ = check publisherAPIClient->post(choreoApiId + "/documents/" + choreoDocId + "/content?organizationId=" + orgUUId, req, {"Authorization": "Bearer " + token});
 
 }
